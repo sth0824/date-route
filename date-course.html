@@ -1,0 +1,392 @@
+<title>데이트 노선도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one mobile-first column; the course is drawn as a subway line with stations */
+:root {
+  --bg: #F4F5F8; --surface: #FFFFFF; --ink: #1B1F2A; --muted: #687083;
+  --line: #E1E4EB; --accent: #D93D72; --accent-ink: #FFFFFF; --accent-soft: #FBE6EE;
+  --warn: #9A5B00;
+  --f-display: "Do Hyeon", "IBM Plex Sans KR", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101219; --surface: #1A1D27; --ink: #ECEEF3; --muted: #9BA1AF;
+  --line: #2C303C; --accent: #FF6B9A; --accent-ink: #1A0A10; --accent-soft: #3A1D29; --warn: #F0B35A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #101219; --surface: #1A1D27; --ink: #ECEEF3; --muted: #9BA1AF;
+  --line: #2C303C; --accent: #FF6B9A; --accent-ink: #1A0A10; --accent-soft: #3A1D29; --warn: #F0B35A; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 620px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+
+header h1 { font-family: var(--f-display); font-weight: 400; font-size: 34px; margin: 0; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+header h1 .dot { width: 18px; height: 18px; border-radius: 50%; border: 4px solid var(--accent); background: var(--surface); flex: none; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+label.lbl, .lbl { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.loc-row { display: flex; gap: 8px; }
+#loc { flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); }
+#loc:focus { outline: none; border-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip.hot { border-style: dashed; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-weight: 700; font-size: 15px; padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--accent); cursor: pointer; background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.flex { flex: 1; }
+.btn:disabled { opacity: .5; cursor: default; }
+.small { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.small:hover { border-color: var(--accent); }
+
+.status { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.status.err { color: var(--warn); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: spin 0.9s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* Result: route card */
+.route { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.route-head { padding: 18px 18px 14px; border-bottom: 4px solid var(--accent); display: flex; flex-direction: column; gap: 4px; }
+.route-tag { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.06em; }
+.route-head h2 { font-family: var(--f-display); font-weight: 400; font-size: 26px; margin: 0; text-wrap: balance; }
+.route-head p { margin: 0; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.meta b { color: var(--ink); font-weight: 500; }
+
+.stations { list-style: none; margin: 0; padding: 18px 18px 6px; }
+.st { display: grid; grid-template-columns: 52px 22px 1fr; column-gap: 10px; }
+.st-time { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; padding-top: 2px; text-align: right; }
+.st-rail { position: relative; display: flex; justify-content: center; }
+.st-rail::before { content: ""; position: absolute; top: 0; bottom: 0; width: 6px; background: var(--accent); }
+.st:first-child .st-rail::before { top: 6px; }
+.st:last-child .st-rail::before { bottom: auto; height: 12px; }
+.st-dot { position: relative; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 4px solid var(--accent); margin-top: 2px; }
+.st-body { min-width: 0; padding-bottom: 6px; }
+.st-type { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+.st-name { font-family: var(--f-display); font-size: 21px; line-height: 1.25; margin: 4px 0 0; font-weight: 400; overflow-wrap: anywhere; }
+.st-where { font-size: 13px; color: var(--muted); }
+.st-desc { margin: 6px 0 0; }
+.st-tip { margin: 4px 0 0; font-size: 13.5px; color: var(--muted); }
+.st-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.st-links a { font-size: 12.5px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; }
+.st-links a:hover { border-color: var(--accent); }
+.st-cost { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.move { display: grid; grid-template-columns: 52px 22px 1fr; column-gap: 10px; }
+.move .st-rail::before { top: 0; bottom: 0; }
+.move span { font-size: 12.5px; color: var(--muted); padding: 10px 0 14px; }
+
+.route-foot { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+.rain { font-size: 13.5px; background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.rain b { font-weight: 700; }
+.foot-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+.saved h3 { font-family: var(--f-display); font-weight: 400; font-size: 20px; margin: 0 0 8px; }
+.saved ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.saved li { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.saved li button.open { flex: 1; min-width: 0; text-align: left; font: inherit; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 0; }
+.saved li .t { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved li .s { display: block; font-size: 12.5px; color: var(--muted); }
+.saved .del { font: inherit; font-size: 12.5px; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px; }
+.empty { color: var(--muted); font-size: 13.5px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><span class="dot" aria-hidden="true"></span>데이트 노선도</h1>
+    <p>만날 동네를 말하면 그 근처로, 아니면 요즘 서울·경기에서 뜨는 곳으로 코스를 짜드려요.</p>
+  </header>
+
+  <form class="panel" id="form" autocomplete="off">
+    <div class="field">
+      <label class="lbl" for="loc">어디서 만나요?</label>
+      <div class="loc-row">
+        <input id="loc" type="text" placeholder="예: 성수역, 연남동, 수원 행궁동" enterkeyhint="go">
+      </div>
+      <div class="chips" id="areaChips"></div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">언제</span>
+      <div class="chips" data-group="time"></div>
+    </div>
+    <div class="field">
+      <span class="lbl">하고 싶은 것 (여러 개 선택)</span>
+      <div class="chips" data-group="vibe" data-multi="1"></div>
+    </div>
+    <div class="field">
+      <span class="lbl">예산 · 이동</span>
+      <div class="chips" data-group="budget"></div>
+      <div class="chips" data-group="move"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn flex" type="submit" id="goBtn">이 근처로 코스 짜기</button>
+      <button class="btn ghost" type="button" id="hotBtn">요즘 핫한 곳으로</button>
+    </div>
+    <div class="status" id="status" hidden></div>
+  </form>
+
+  <section id="result" aria-live="polite"></section>
+
+  <section class="saved">
+    <h3>저장한 코스</h3>
+    <ul id="savedList"></ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  const AREAS = ["성수", "연남·연희", "한남·이태원", "익선동·종로", "서촌·북촌", "잠실·송리단길", "여의도", "문래", "망원", "수원 행궁동", "판교", "일산 호수공원"];
+  const GROUPS = {
+    time:   { opts: ["점심부터", "오후~저녁", "저녁·밤", "하루 종일"], def: ["오후~저녁"] },
+    vibe:   { opts: ["맛집", "카페·디저트", "산책·공원", "전시·공연", "쇼핑·소품샵", "야경", "액티비티", "술 한잔", "비 와도 OK"], def: ["맛집", "카페·디저트", "산책·공원"] },
+    budget: { opts: ["가성비", "적당히", "기념일급"], def: ["적당히"] },
+    move:   { opts: ["걸어서만", "지하철 OK", "차 있음"], def: ["지하철 OK"] },
+  };
+  const state = {};
+  const $ = (s, el = document) => el.querySelector(s);
+  const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  // ---------- option chips ----------
+  document.querySelectorAll("[data-group]").forEach(box => {
+    const key = box.dataset.group, multi = !!box.dataset.multi, g = GROUPS[key];
+    state[key] = new Set(g.def);
+    g.opts.forEach(o => {
+      const b = h("button", "chip", o); b.type = "button";
+      b.setAttribute("aria-pressed", state[key].has(o));
+      b.onclick = () => {
+        if (multi) { state[key].has(o) ? state[key].delete(o) : state[key].add(o); }
+        else state[key] = new Set([o]);
+        box.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", state[key].has(c.textContent)));
+      };
+      box.append(b);
+    });
+  });
+  const areaBox = $("#areaChips");
+  AREAS.forEach(a => {
+    const b = h("button", "chip hot", a); b.type = "button";
+    b.onclick = () => { $("#loc").value = a; $("#loc").focus(); };
+    areaBox.append(b);
+  });
+
+  // ---------- built-in example courses (used when Claude is unavailable) ----------
+  const EXAMPLES = {
+    "성수": { title: "숲에서 시작해 골목으로", area: "성수동", summary: "서울숲 산책으로 시작해 성수 골목의 카페와 팝업을 구경하고 한강 노을로 마무리하는 코스.",
+      stops: [
+        { time: "14:00", type: "산책", name: "서울숲", where: "서울숲역", desc: "넓은 잔디밭과 은행나무길이 있어 가을에 특히 예뻐요.", tip: "서울숲역 3번 출구 쪽 입구가 가까워요.", cost: "무료" },
+        { time: "15:30", type: "카페", name: "아뜰리에길 카페 골목", where: "성수동1가", desc: "작은 로스터리와 디저트 카페가 모여 있는 골목이에요.", tip: "주말 오후엔 웨이팅이 있으니 두세 곳 후보를 정해두세요.", cost: "1인 약 8,000원" },
+        { time: "17:00", type: "구경", name: "연무장길 팝업·편집숍", where: "성수역", desc: "브랜드 팝업스토어와 편집숍이 계속 바뀌어 매번 새로워요.", tip: "인스타에서 이번 주 팝업을 미리 확인하세요.", cost: "자유" },
+        { time: "18:30", type: "저녁", name: "성수역 인근 맛집 골목", where: "성수역 3번 출구", desc: "양식, 한식 주점, 고깃집이 골고루 있어 고르기 쉬워요.", tip: "지도 앱에서 '성수 데이트 맛집'으로 최신 리뷰를 보세요.", cost: "1인 약 30,000원" },
+        { time: "20:00", type: "야경", name: "뚝섬한강공원", where: "자양역(뚝섬유원지역)", desc: "강바람 맞으며 걷기 좋고 편의점 라면도 국룰이에요.", tip: "성수에서 버스나 택시로 10분 정도.", cost: "무료" } ],
+      moves: ["도보 10분", "도보 8분", "도보 5분", "택시 10분"], budget: "2인 약 8~10만원", rainy: "비 오면 서울숲 대신 성수 내 전시·팝업 위주로 바꾸세요." },
+    "연남·연희": { title: "연트럴파크 따라 걷는 날", area: "연남동", summary: "경의선숲길을 따라 걷다가 골목 맛집과 소품숍, 연희동의 조용한 카페로 이어지는 코스.",
+      stops: [
+        { time: "13:00", type: "점심", name: "연남동 골목 맛집", where: "홍대입구역 3번 출구", desc: "아시안, 파스타, 한식 밥집이 촘촘한 동네예요.", tip: "점심 피크(12~13시)는 피하면 대기가 짧아요.", cost: "1인 약 18,000원" },
+        { time: "14:30", type: "산책", name: "경의선숲길 연남동 구간", where: "연남동", desc: "길게 이어진 잔디 산책로라 걷기만 해도 데이트가 돼요.", tip: "중간중간 벤치에서 쉬어가기 좋아요.", cost: "무료" },
+        { time: "15:30", type: "구경", name: "연남동 소품숍 골목", where: "동교로 일대", desc: "문구, 빈티지, 향 소품 가게가 모여 있어요.", tip: "서로 선물 하나씩 골라주기.", cost: "자유" },
+        { time: "17:00", type: "카페", name: "연희동 조용한 카페", where: "연희동", desc: "연남보다 한적해서 대화하기 좋아요.", tip: "연남에서 걸어서 15분, 버스로 5분.", cost: "1인 약 8,000원" } ],
+      moves: ["도보 3분", "도보 5분", "도보 15분"], budget: "2인 약 6~8만원", rainy: "비 오면 숲길 대신 홍대 쪽 실내 전시나 보드게임 카페로." },
+    "익선동·종로": { title: "한옥 골목과 궁궐 산책", area: "익선동", summary: "익선동 한옥 골목에서 밥을 먹고 창덕궁 돌담길을 걸은 뒤 종로 노포에서 한잔하는 코스.",
+      stops: [
+        { time: "12:30", type: "점심", name: "익선동 한옥 골목", where: "종로3가역 4번 출구", desc: "한옥을 개조한 식당과 카페가 좁은 골목에 모여 있어요.", tip: "주말엔 오픈 시간에 맞춰 가는 게 좋아요.", cost: "1인 약 20,000원" },
+        { time: "14:30", type: "산책", name: "창덕궁 · 후원", where: "안국역", desc: "가을 단풍이 특히 아름다운 궁궐이에요.", tip: "후원은 예약제라 미리 확인하세요. 한복 입으면 입장 무료.", cost: "1인 3,000원~" },
+        { time: "16:30", type: "카페", name: "북촌·안국 카페", where: "안국역", desc: "한옥 뷰 카페가 많아요.", tip: "창덕궁에서 도보 10분.", cost: "1인 약 9,000원" },
+        { time: "18:30", type: "저녁·술", name: "종로3가 포차 거리", where: "종로3가역", desc: "야외 포장마차 분위기로 마무리하기 좋아요.", tip: "날이 쌀쌀하면 겉옷 챙기기.", cost: "1인 약 25,000원" } ],
+      moves: ["도보 15분", "도보 10분", "도보 15분"], budget: "2인 약 10만원", rainy: "비 오면 궁궐 대신 국립현대미술관 서울관으로." },
+    "수원 행궁동": { title: "성곽 따라 걷는 행리단길", area: "수원 행궁동", summary: "화성행궁과 성곽길을 걷고 행리단길 카페와 맛집을 들르는 경기도 대표 데이트 코스.",
+      stops: [
+        { time: "13:00", type: "점심", name: "행리단길 맛집", where: "행궁동", desc: "작은 식당과 퓨전 한식집이 많아요.", tip: "주차는 공영주차장을 이용하세요.", cost: "1인 약 17,000원" },
+        { time: "14:30", type: "구경", name: "화성행궁", where: "행궁동", desc: "조선 정조의 행궁으로 사진 찍기 좋아요.", tip: "토·일 오후에는 전통 공연이 열리기도 해요.", cost: "1인 2,000원" },
+        { time: "16:00", type: "산책", name: "수원화성 성곽길 (방화수류정)", where: "장안문~화홍문", desc: "성곽을 따라 걷다 방화수류정 앞 잔디에서 쉬어가요.", tip: "해질녘 용연 연못 풍경이 예뻐요.", cost: "무료" },
+        { time: "18:00", type: "카페", name: "행리단길 루프탑 카페", where: "행궁동", desc: "성곽이 보이는 루프탑 카페가 여럿 있어요.", tip: "야경 보려면 해 지기 직전에 가세요.", cost: "1인 약 9,000원" } ],
+      moves: ["도보 5분", "도보 15분", "도보 10분"], budget: "2인 약 7~9만원", rainy: "비 오면 성곽길 대신 수원시립미술관(행궁 앞)으로." },
+  };
+
+  // ---------- rendering ----------
+  const mapLinks = s => {
+    const q = encodeURIComponent([s.where, s.name].filter(Boolean).join(" "));
+    return [["네이버지도", "https://map.naver.com/p/search/" + q], ["카카오맵", "https://map.kakao.com/?q=" + q]];
+  };
+  let current = null;
+
+  function renderCourse(c, tag) {
+    current = c;
+    const box = $("#result"); box.replaceChildren();
+    const card = h("article", "route");
+    const head = h("div", "route-head");
+    head.append(h("span", "route-tag", tag), h("h2", null, c.title || "데이트 코스"), h("p", null, c.summary || ""));
+    const meta = h("div", "meta");
+    [["지역", c.area], ["예상", c.budget], ["정거장", (c.stops || []).length + "곳"]].forEach(([k, v]) => {
+      if (!v) return; const s = h("span"); s.append(k + " "); s.append(h("b", null, v)); meta.append(s);
+    });
+    head.append(meta);
+    const ol = h("ol", "stations");
+    (c.stops || []).forEach((s, i) => {
+      const li = h("li", "st");
+      const rail = h("div", "st-rail"); rail.append(h("span", "st-dot"));
+      const body = h("div", "st-body");
+      body.append(h("span", "st-type", s.type || "장소"), h("h3", "st-name", s.name || ""));
+      if (s.where) body.append(h("div", "st-where", s.where));
+      if (s.desc) body.append(h("p", "st-desc", s.desc));
+      if (s.tip) body.append(h("p", "st-tip", "팁 · " + s.tip));
+      const links = h("div", "st-links");
+      mapLinks(s).forEach(([t, u]) => { const a = h("a", null, t); a.href = u; a.target = "_blank"; a.rel = "noopener"; links.append(a); });
+      if (s.cost) links.append(h("span", "st-cost", s.cost));
+      body.append(links);
+      li.append(h("div", "st-time", s.time || ""), rail, body);
+      ol.append(li);
+      const mv = (c.moves || [])[i];
+      if (i < c.stops.length - 1) {
+        const m = h("li", "move"); m.setAttribute("aria-hidden", "true");
+        m.append(h("span"), h("div", "st-rail"), h("span", null, mv ? "↓ " + mv : ""));
+        ol.append(m);
+      }
+    });
+    const foot = h("div", "route-foot");
+    if (c.rainy) { const r = h("div", "rain"); r.append(h("b", null, "플랜 B  "), c.rainy); foot.append(r); }
+    const fa = h("div", "foot-actions");
+    const again = h("button", "small", "다른 코스로 다시"); again.type = "button"; again.onclick = () => run(lastMode, true);
+    const copy = h("button", "small", "코스 복사"); copy.type = "button"; copy.onclick = () => copyCourse(copy);
+    const save = h("button", "small", "저장"); save.type = "button"; save.onclick = () => { saveCourse(c); save.textContent = "저장됨"; save.disabled = true; };
+    if (sample) fa.append(again);
+    fa.append(copy, save);
+    foot.append(fa, h("p", "note", "영업시간·휴무·예약 여부는 지도 링크에서 꼭 한 번 확인하세요. 추천은 AI가 알고 있는 정보 기준이라 최근에 바뀐 곳이 있을 수 있어요."));
+    card.append(head, ol, foot);
+    box.append(card);
+  }
+
+  function courseText(c) {
+    const lines = [`[${c.title}] ${c.area || ""}`, c.summary || "", ""];
+    (c.stops || []).forEach((s, i) => {
+      lines.push(`${s.time || ""} ${s.name} (${s.type || ""}${s.where ? ", " + s.where : ""})`);
+      if (s.desc) lines.push("  " + s.desc);
+      if (c.moves && c.moves[i]) lines.push("  ↓ " + c.moves[i]);
+    });
+    if (c.budget) lines.push("", "예상 비용: " + c.budget);
+    if (c.rainy) lines.push("플랜 B: " + c.rainy);
+    return lines.join("\n");
+  }
+  async function copyCourse(btn) {
+    const text = courseText(current);
+    try { await navigator.clipboard.writeText(text); btn.textContent = "복사됨"; }
+    catch { const ta = h("textarea"); ta.value = text; ta.style.cssText = "width:100%;min-height:160px;margin-top:8px"; btn.closest(".route-foot").append(ta); ta.select(); btn.textContent = "아래 글을 복사하세요"; }
+  }
+
+  // ---------- saved courses (this browser only) ----------
+  const KEY = "date-route-saved";
+  const loadSaved = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+  const writeSaved = list => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch {} };
+  function saveCourse(c) { const list = loadSaved(); list.unshift({ ...c, savedAt: Date.now() }); writeSaved(list.slice(0, 30)); renderSaved(); }
+  function renderSaved() {
+    const ul = $("#savedList"); ul.replaceChildren();
+    const list = loadSaved();
+    if (!list.length) { ul.append(h("li", "empty", "마음에 드는 코스에서 '저장'을 누르면 여기에 모여요. (이 브라우저에만 저장돼요)")); return; }
+    list.forEach((c, i) => {
+      const li = h("li");
+      const open = h("button", "open"); open.type = "button";
+      open.append(h("span", "t", c.title), h("span", "s", `${c.area || ""} · ${(c.stops || []).map(s => s.name).slice(0, 3).join(" → ")}`));
+      open.onclick = () => { renderCourse(c, "저장한 코스"); $("#result").scrollIntoView({ behavior: "smooth" }); };
+      const del = h("button", "del", "삭제"); del.type = "button";
+      del.onclick = () => { const l = loadSaved(); l.splice(i, 1); writeSaved(l); renderSaved(); };
+      li.append(open, del); ul.append(li);
+    });
+  }
+
+  // ---------- asking Claude ----------
+  let sample = null, ctl = null, lastMode = "near";
+  const status = $("#status");
+  function setStatus(msg, kind) {
+    status.hidden = !msg; status.className = "status" + (kind === "err" ? " err" : ""); status.replaceChildren();
+    if (kind === "busy") {
+      status.append(h("span", "spinner"), h("span", null, msg));
+      const stop = h("button", "small", "그만"); stop.type = "button"; stop.onclick = () => ctl?.abort(); status.append(stop);
+    } else if (msg) status.append(h("span", null, msg));
+  }
+
+  function buildPrompt(mode) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const pick = k => [...state[k]].join(", ") || "상관없음";
+    const where = mode === "hot"
+      ? `지금(${now.getFullYear()}년 ${month}월) 서울·경기에서 데이트로 인기 있는 동네 하나를 골라 그 동네로 코스를 짜줘. 계절과 이 시기 행사(축제, 단풍, 야경 등)를 고려해줘.` +
+        ($("#loc").value.trim() ? ` 참고로 사용자는 "${$("#loc").value.trim()}" 근처에 살아.` : "")
+      : `만나는 장소: "${$("#loc").value.trim()}". 이 근처(대중교통 30분 이내)로 코스를 짜줘. 지금은 ${month}월이니 계절감을 반영해줘.`;
+    return `너는 서울·경기 데이트 코스를 잘 아는 친구야. 한국어로 답해.
+${where}
+- 시간대: ${pick("time")}
+- 하고 싶은 것: ${pick("vibe")}
+- 예산: ${pick("budget")}
+- 이동: ${pick("move")}
+
+규칙:
+- 정거장은 4~5곳, 실제 동선이 자연스럽게 이어지게.
+- 실제로 존재한다고 확신하는 오래 운영된 유명한 곳 위주로. 확신이 없는 개별 가게 대신 "OO역 인근 파스타 골목"처럼 거리·골목·랜드마크 단위로 적어.
+- name은 지도에서 검색되는 이름 그대로, where는 동네나 가까운 역.
+- desc는 왜 데이트에 좋은지 1~2문장, tip은 짧은 실전 팁.
+
+아래 형태의 JSON 하나만 출력해:
+{"title":"코스 이름(짧고 감성적으로)","area":"동네","summary":"한 문장 소개","stops":[{"time":"14:00","type":"카페","name":"장소명","where":"동네/역","desc":"...","tip":"...","cost":"1인 약 8,000원"}],"moves":["도보 7분"],"budget":"2인 약 10만원","rainy":"비 오면 대안 한 문장"}
+moves 길이는 stops보다 1 작게.`;
+  }
+
+  const ERR = {
+    rate_limited: "요청이 많아요. 잠시 후 다시 눌러주세요.",
+    session_expired: "로그인이 만료됐어요. 다시 로그인해 주세요.",
+    invalid_json: "코스 형식이 꼬였어요. 한 번 더 눌러주세요.",
+    refused: "이 요청으로는 코스를 만들 수 없어요. 장소를 바꿔보세요.",
+    empty_completion: "답이 비어 있어요. 조건을 조금 바꿔보세요.",
+  };
+
+  async function run(mode, fresh) {
+    lastMode = mode;
+    if (mode === "near" && !$("#loc").value.trim()) { setStatus("만날 동네나 역 이름을 적어주세요.", "err"); $("#loc").focus(); return; }
+    if (!sample) { return fallback(mode); }
+    ctl?.abort(); ctl = new AbortController();
+    const btns = [$("#goBtn"), $("#hotBtn")]; btns.forEach(b => b.disabled = true);
+    setStatus(mode === "hot" ? "요즘 뜨는 동네 고르는 중… (보통 20~40초)" : "근처 코스 짜는 중… (보통 20~40초)", "busy");
+    try {
+      const c = await sample.json(buildPrompt(mode), { signal: ctl.signal, cache: fresh ? false : true });
+      if (!c || !Array.isArray(c.stops) || !c.stops.length) throw { code: "invalid_json" };
+      setStatus("");
+      renderCourse(c, mode === "hot" ? "요즘 핫한 코스" : "추천 코스");
+      $("#result").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      if (e?.code === "cancelled") { setStatus(""); }
+      else if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e?.code)) {
+        sample = null; fallback(mode, "AI 추천을 쓸 수 없어서 기본 코스를 보여드려요.");
+      } else setStatus(ERR[e?.code] || "연결이 잠깐 끊겼어요. 다시 눌러주세요.", "err");
+    } finally { btns.forEach(b => b.disabled = false); }
+  }
+
+  function fallback(mode, msg) {
+    const q = $("#loc").value.replace(/\s/g, "");
+    const keys = Object.keys(EXAMPLES);
+    let key = keys.find(k => k.split("·").some(p => q && (q.includes(p.replace(/\s/g, "")) || p.replace(/\s/g, "").includes(q))));
+    if (!key) key = keys[Math.floor(Math.random() * keys.length)];
+    setStatus(msg || "AI 추천을 쓸 수 없는 화면이라 기본 코스를 보여드려요.", "err");
+    renderCourse(EXAMPLES[key], "기본 코스");
+  }
+
+  $("#form").addEventListener("submit", e => { e.preventDefault(); run("near"); });
+  $("#hotBtn").onclick = () => run("hot");
+
+  // first frame: a real example course
+  $("#loc").value = "성수";
+  renderCourse(EXAMPLES["성수"], "예시 코스");
+  renderSaved();
+
+  (window.claude?.use ? window.claude.use("sample") : Promise.resolve(null))
+    .then(s => { sample = s; if (!s) $("#goBtn").textContent = "기본 코스 보기"; })
+    .catch(() => {});
+})();
+</script>

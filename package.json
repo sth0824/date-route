@@ -1,0 +1,9 @@
+{
+  "name": "date-route",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@anthropic-ai/sdk": "^0.131.0" }
+}
